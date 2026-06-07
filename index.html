@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>EXIF Stamp</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hrow">
+      <div class="pill">
+        <button class="pbtn" id="btnNew" title="閉じる/別の画像">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="grow"></div>
+      <div class="pill group">
+        <button class="pbtn undo-btn" id="btnUndo" title="元に戻す">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h11a5 5 0 010 10h-4"/><path d="M3 10l4-4M3 10l4 4"/></svg>
+        </button>
+        <button class="pbtn redo-btn" id="btnRedo" title="やり直し">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H10a5 5 0 000 10h4"/><path d="M21 10l-4-4M21 10l-4 4"/></svg>
+        </button>
+      </div>
+      <div class="grow"></div>
+      <div class="pill">
+        <button class="pbtn" id="btnSave" title="保存">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="hrow">
+      <div class="grow"></div>
+      <div class="pill group">
+        <button class="pbtn" id="btnSettings" title="詳細設定">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg>
+        </button>
+        <button class="pbtn" id="btnMore" title="プリセット">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="toast" id="toast"></div>
+    <div class="upload" id="upload">
+      <div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <b>写真を追加</b>
+      <small>タップして選択／ドロップ／⌘V で貼り付け<br>JPEG推奨（EXIF対応）</small>
+    </div>
+    <canvas id="canvas" class="hidden"></canvas>
+    <input id="file" type="file" accept="image/*" class="hidden">
+  </div>
+
+  <div class="dock">
+    <div class="tools" id="tools"></div>
+    <div class="scrub hidden" id="scrub">
+      <div class="scrubval" id="scrubval"></div>
+      <div class="track" id="track"><div class="ticks" id="ticks"></div><div class="needle"></div><div class="tri"></div></div>
+    </div>
+    <div class="itemctl hidden" id="itemctl"></div>
+    <div class="hint hidden" id="hint"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="bar">バー</button>
+      <button class="tab" data-tab="items">項目</button>
+      <button class="tab" data-tab="color">色</button>
+      <button class="tab" data-tab="image">画像</button>
+      <button class="tab" data-tab="export">出力</button>
+    </div>
+  </div>
+</div>
+
+<div class="popover hidden" id="popover"></div>
+
+<!-- Exit confirmation -->
+<div class="confbg hidden" id="confbg">
+  <div class="confdlg">
+    <div class="conf-title">編集を終了しますか？</div>
+    <div class="conf-sub">保存されていない変更は失われます。<br>先に右上のチェックボタンで書き出してください。</div>
+    <button class="conf-danger" id="confYes">終了する（保存しない）</button>
+    <button class="conf-cancel" id="confNo">キャンセル — 編集を続ける</button>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="sheet">
+  <header>
+    <div style="width:60px"></div>
+    <div class="stitle">詳細設定</div>
+    <button class="done-btn" id="sheetDone">完了</button>
+  </header>
+  <div class="sbody">
+    <div class="scard">
+      <div class="shead">プリセット</div>
+      <div class="presets-row" id="sPresets"></div>
+    </div>
+    <div class="scard">
+      <div class="shead">表示する項目</div>
+      <div id="sFields"></div>
+      <button class="addbtn" id="addCustom">＋ カスタム項目を追加</button>
+    </div>
+    <div class="scard" id="styleCard"><div class="shead">バーのスタイル</div></div>
+    <div class="scard" id="borderCard">
+      <div class="shead" id="borderHead">フレーム枠</div>
+      <div class="shead" style="font-size:11px;color:var(--muted);padding:4px 16px 8px;font-weight:400">上下左右の厚み(画像サイズ%)、色を設定</div>
+    </div>
+    <div class="scard">
+      <div class="shead">フレームプリセット</div>
+      <div class="presets-row" id="sFramePresets"></div>
+    </div>
+    <div class="scard" id="exportCard"><div class="shead">書き出し</div></div>
+    <div class="note">サイズ・太さ・背景の濃さ・線の太さ・画質は編集画面下部の目盛りで調整できます。</div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
